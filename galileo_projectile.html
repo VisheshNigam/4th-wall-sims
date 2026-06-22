@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Galileo's Projectile Motion - Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;800;900&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --accent-pink: #f43f5e;
+            --accent-cyan: #06b6d4;
+            --table-color: #475569;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background: transparent; 
+        }
+
+        #short-container {
+            position: relative;
+            width: 100%;
+            max-width: 850px; 
+            margin: 0 auto; 
+            aspect-ratio: 18/16;
+            background-color: var(--bg-color);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+            display: flex;
+            flex-direction: column;
+        }
+
+        #simulation-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            object-fit: cover;
+        }
+
+        /* NEW: Glassmorphism Top Dashboard */
+        #top-dashboard {
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 92%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            padding: 12px 24px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            z-index: 50;
+        }
+
+        .dashboard-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        #speed-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #speed-section label {
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        #velocity-input {
+            width: 75px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 4px 8px;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        #velocity-input:focus {
+            border-color: var(--accent-cyan);
+        }
+
+        .unit-label {
+            color: #94a3b8;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .controls-divider {
+            width: 1px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.2);
+            margin: 0 4px;
+        }
+
+        #btn-section {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+        }
+
+        .play-btn {
+            padding: 6px 16px;
+            border-radius: 20px;
+            background: rgba(6, 182, 212, 0.2);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        .play-btn:hover {
+            background: var(--accent-cyan);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .icon-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 0.9rem;
+        }
+
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+        
+        .icon-btn.active {
+            background: rgba(6, 182, 212, 0.6);
+            border-color: #06b6d4;
+        }
+
+        /* The Hook CTA */
+        #cta-btn {
+            background: linear-gradient(135deg, var(--accent-pink), #e11d48);
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(244, 63, 94, 0.4);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            white-space: nowrap;
+        }
+
+        #cta-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(244, 63, 94, 0.6);
+            background: linear-gradient(135deg, #fb7185, #e11d48);
+        }
+
+        /* Captions Overlay shifted below the moon */
+        #captions-container {
+            position: absolute;
+            top: 28%;
+            right: 8%;
+            z-index: 10;
+            text-align: right;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        .caption-text {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: white;
+            line-height: 1.4;
+            display: inline-block;
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            border: none;
+            box-shadow: none;
+            text-shadow: 0 4px 12px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.6);
+            max-width: 100%;
+            pointer-events: auto; /* Allow clicking links inside */
+        }
+
+        .highlight {
+            color: #fbbf24;
+        }
+
+        a.highlight:hover {
+            color: #fcd34d;
+        }
+
+        /* Result Display (Grouped with Captions) */
+        #result-display {
+            text-align: right;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: white;
+            line-height: 1.4;
+            text-shadow: 0 4px 12px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.6);
+            pointer-events: auto;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        @media (max-width: 600px) {
+            #top-dashboard {
+                flex-direction: column;
+                gap: 12px;
+                padding: 12px;
+            }
+            .dashboard-controls {
+                width: 100%;
+                justify-content: space-between;
+            }
+            #cta-btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="short-container">
+        
+        <canvas id="simulation-canvas"></canvas>
+
+        <!-- Dynamic Gamification Captions & Result -->
+        <div id="captions-container">
+            <div class="caption-text" id="caption-display">Loading Challenge...</div>
+            <div id="result-display"></div>
+        </div>
+
+        <!-- NEW: Top Dashboard UI -->
+        <div id="top-dashboard">
+            <div class="dashboard-controls">
+                
+                <div id="speed-section">
+                    <label for="velocity-input">Speed (v₀)</label>
+                    <input type="number" id="velocity-input" value="3.0" step="0.1" min="0.5" max="10.0">
+                    <span class="unit-label">m/s</span>
+                </div>
+                
+                <div class="controls-divider"></div>
+                
+                <div id="btn-section">
+                    <button class="control-btn play-btn" id="action-btn" title="Launch Projectile">FIRE</button>
+                </div>
+            </div>
+
+            <!-- The Traffic Driver CTA -->
+            <a href="https://www.thesciencecube.com/p/physics-simulations" target="_blank" id="cta-btn">
+                Unlock Simulation Library 🚀
+            </a>
+        </div>
+
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simulation-canvas');
+        const ctx = canvas.getContext('2d');
+        const captionDisplay = document.getElementById('caption-display');
+        const resultDisplay = document.getElementById('result-display');
+        const velocityInput = document.getElementById('velocity-input');
+        const actionBtn = document.getElementById('action-btn');
+
+        // Render resolution 
+        const CANVAS_WIDTH = 2160; 
+        const CANVAS_HEIGHT = 1920;
+        canvas.width = CANVAS_WIDTH;
+        canvas.height = CANVAS_HEIGHT;
+
+        // Visual Constants
+        const TABLE_HEIGHT = 375; 
+        const FLOOR_Y = 1750;
+        const START_X = 200;
+        const BALL_RADIUS = 30;
+
+        // Physics Constants & Calibration (m)
+        const REAL_DROP_M = 4.9; // 4.9 meters = exactly 1 second of fall time at 9.8 m/s²
+        const PX_PER_M = (FLOOR_Y - TABLE_HEIGHT) / REAL_DROP_M; 
+        const GRAVITY = 9.8 * PX_PER_M; 
+        
+        let currentTime = 0; 
+        let lastTimestamp = 0;
+        let animationId;
+
+        // State Objects
+        let ball1 = { x: START_X, y: TABLE_HEIGHT - BALL_RADIUS, vx: 0, vy: 0, color: '#f43f5e', active: false }; 
+        let ball2 = { x: START_X, y: TABLE_HEIGHT - BALL_RADIUS, vx: 0, vy: 0, color: '#06b6d4', active: false }; 
+        
+        let snapshots = []; 
+        let nextSnapshotTime = 0;
+        let timeScale = 0.3; 
+        
+        let particles = []; 
+        let wallCanvas = null; 
+        let bgCanvas = null; 
+        let stars = []; 
+        
+        // Game Logic states
+        let gameState = 'idle'; // 'idle', 'flying', 'hit', 'miss'
+        let dragonTargetX = 0;
+        let dragonHit = false;
+        let dragonHitTimer = 0;
+        
+        for(let i = 0; i < 200; i++) {
+            stars.push({
+                x: Math.random() * CANVAS_WIDTH,
+                y: Math.random() * FLOOR_Y, 
+                r: Math.random() * 2 + 0.5,
+                alpha: Math.random(),
+                twinkleSpeed: (Math.random() - 0.5) * 0.05
+            });
+        }
+
+        function getFallTime() {
+            return Math.sqrt(2 * (FLOOR_Y - TABLE_HEIGHT) / GRAVITY);
+        }
+
+        // Initialize gamified state
+        function setupNewChallenge() {
+            ball1 = { x: START_X, y: TABLE_HEIGHT - BALL_RADIUS, vx: 0, vy: 0, color: '#f43f5e', active: false };
+            ball2 = { x: START_X, y: TABLE_HEIGHT - BALL_RADIUS, vx: 0, vy: 0, color: '#06b6d4', active: false };
+            particles = []; 
+            snapshots = [];
+            
+            dragonHit = false;
+            dragonHitTimer = 0;
+
+            // Spawn dragon at a random distance in meters
+            const minDistMeters = 2.0;
+            const maxDistMeters = 6.0;
+            const targetDistMeters = minDistMeters + Math.random() * (maxDistMeters - minDistMeters);
+            
+            const randomDistance = targetDistMeters * PX_PER_M;
+            dragonTargetX = START_X + randomDistance;
+            
+            gameState = 'idle';
+            actionBtn.innerText = 'FIRE';
+            actionBtn.style.opacity = '1';
+            actionBtn.style.pointerEvents = 'auto';
+            resultDisplay.style.opacity = '0';
+
+            captionDisplay.innerHTML = `
+                🎯 Target Locked! Calculate required speed (v₀)<br>
+                <span class="highlight" style="font-size: 0.85rem; font-family: 'Inter', sans-serif; letter-spacing: 0.5px; font-weight: 500;">
+                    Drop: Δy = ${REAL_DROP_M.toFixed(1)} m &nbsp;|&nbsp; Dist: Δx = ${targetDistMeters.toFixed(1)} m
+                </span>
+            `;
+        }
+
+        function launchBalls() {
+            if (gameState !== 'idle') return;
+
+            ball1.active = true;
+            ball2.active = true;
+            
+            const userSpeedMeters = parseFloat(velocityInput.value) || 3.0;
+            ball2.vx = userSpeedMeters * PX_PER_M; 
+            
+            gameState = 'flying';
+            actionBtn.innerText = 'WAIT';
+            actionBtn.style.opacity = '0.5';
+            actionBtn.style.pointerEvents = 'none';
+            resultDisplay.style.opacity = '0';
+            
+            captionDisplay.innerHTML = `Projectiles in flight...`;
+
+            timeScale = 0.3; 
+            nextSnapshotTime = currentTime + 0.1; 
+        }
+
+        function updatePhysics(dt) {
+            currentTime += dt;
+            let effDt = dt * timeScale;
+
+            if (ball1.active) {
+                ball1.vy += GRAVITY * effDt;
+                ball1.y += ball1.vy * effDt;
+                
+                if (ball1.y >= FLOOR_Y - BALL_RADIUS) {
+                    ball1.y = FLOOR_Y - BALL_RADIUS;
+                    ball1.vy = 0;
+                    ball1.active = false;
+                }
+            }
+
+            if (ball2.active) {
+                ball2.vy += GRAVITY * effDt;
+                ball2.x += ball2.vx * effDt;
+                ball2.y += ball2.vy * effDt;
+                
+                if (ball2.vy > 0) {
+                     for (let j = 0; j < 3; j++) {
+                         if (Math.random() > 0.1) {
+                             createFireParticle(ball2.x, ball2.y);
+                         }
+                     }
+                }
+
+                if (ball2.y >= FLOOR_Y - BALL_RADIUS) {
+                    ball2.y = FLOOR_Y - BALL_RADIUS;
+                    
+                    // Collision Check
+                    const hitTolerance = 120; // Allow slight rounding error
+                    const distanceMissed = Math.abs(ball2.x - dragonTargetX);
+                    const targetDistance = dragonTargetX - START_X;
+                    const missPercent = ((distanceMissed / targetDistance) * 100).toFixed(1);
+
+                    if (distanceMissed <= hitTolerance) {
+                        dragonHit = true;
+                        dragonHitTimer = 1.5; 
+                        for (let i = 0; i < 40; i++) {
+                            createFireParticle(dragonTargetX, FLOOR_Y - 40);
+                        }
+                        gameState = 'hit';
+                        resultDisplay.innerHTML = `
+                            <span style="color: #4ade80;">✅ DIRECT HIT!</span><br>
+                            <span style="font-size: 0.9rem; font-weight: 600; color: white;">Need help? Visit <a href="https://www.thesciencecube.com/" target="_blank" class="highlight" style="text-decoration: underline;">The Science Cube</a></span>
+                        `;
+                        resultDisplay.style.opacity = '1';
+                        captionDisplay.innerHTML = `Outstanding kinematics!`;
+                    } else {
+                        gameState = 'miss';
+                        resultDisplay.innerHTML = `
+                            <span style="color: #f87171;">❌ MISSED by ${missPercent}%!</span><br>
+                            <span style="font-size: 0.9rem; font-weight: 600; color: white;">Need help? Visit <a href="https://www.thesciencecube.com/" target="_blank" class="highlight" style="text-decoration: underline;">The Science Cube</a></span>
+                        `;
+                        resultDisplay.style.opacity = '1';
+                        captionDisplay.innerHTML = `Try recalculating v₀!`;
+                    }
+                    
+                    actionBtn.innerText = 'RESET';
+                    actionBtn.style.opacity = '1';
+                    actionBtn.style.pointerEvents = 'auto';
+
+                    ball2.vy = 0;
+                    ball2.vx = 0;
+                    ball2.active = false;
+                }
+            }
+
+            if (dragonHitTimer > 0) {
+                dragonHitTimer -= dt;
+                if(dragonHitTimer <= 0) {
+                    dragonHit = false;
+                }
+            }
+
+            // Strobe effect recording
+            if (ball1.active || ball2.active) {
+                if (currentTime >= nextSnapshotTime) {
+                    snapshots.push({ y: ball1.y, x1: ball1.x, x2: ball2.x });
+                    nextSnapshotTime = currentTime + 0.15; 
+                }
+            }
+            
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx * effDt;
+                p.y += p.vy * effDt;
+                p.life -= dt; 
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+        
+        function createFireParticle(x, y) {
+            let spawnX = x - (ball2.vx * 0.03) + (Math.random() - 0.5) * 30; 
+            let spawnY = y - (ball2.vy * 0.03) + (Math.random() - 0.5) * 30; 
+            
+            particles.push({
+                x: spawnX,
+                y: spawnY,
+                vx: (Math.random() - 0.5) * 80 - ball2.vx * 0.2, 
+                vy: (Math.random() - 0.5) * 80 - ball2.vy * 0.2,
+                life: 0.3 + Math.random() * 0.5, 
+                maxLife: 0.8,
+                size: 10 + Math.random() * 25 
+            });
+        }
+
+        function drawScene() {
+            drawNightSky();
+
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(0, FLOOR_Y, CANVAS_WIDTH, CANVAS_HEIGHT - FLOOR_Y);
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 10;
+            ctx.beginPath();
+            ctx.moveTo(0, FLOOR_Y);
+            ctx.lineTo(CANVAS_WIDTH, FLOOR_Y);
+            ctx.stroke();
+
+            drawCastleWall(0, TABLE_HEIGHT, START_X, CANVAS_HEIGHT - TABLE_HEIGHT);
+            
+            drawDragon(dragonTargetX, FLOOR_Y, dragonHit || dragonHitTimer > 0, false);
+            
+            // Draw Target marker on the ground
+            if (gameState === 'idle') {
+                ctx.beginPath();
+                ctx.ellipse(dragonTargetX, FLOOR_Y, 80, 15, 0, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+            }
+
+            particles.forEach(p => {
+                let alpha = p.life / p.maxLife;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
+                
+                if (alpha > 0.6) {
+                    ctx.fillStyle = `rgba(255, 255, 0, ${alpha})`; 
+                } else if (alpha > 0.3) {
+                    ctx.fillStyle = `rgba(255, 100, 0, ${alpha})`; 
+                } else {
+                    ctx.fillStyle = `rgba(200, 0, 0, ${alpha})`;   
+                }
+                ctx.fill();
+            });
+
+            if (snapshots.length > 0) {
+                snapshots.forEach((snap) => {
+                    ctx.beginPath();
+                    ctx.setLineDash([15, 15]);
+                    ctx.moveTo(snap.x1, snap.y);
+                    ctx.lineTo(snap.x2, snap.y);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                    ctx.lineWidth = 4;
+                    ctx.stroke();
+                    ctx.setLineDash([]); 
+
+                    ctx.globalAlpha = 0.3;
+                    ctx.beginPath();
+                    ctx.arc(snap.x1, snap.y, BALL_RADIUS, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ef4444'; 
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(snap.x2, snap.y, BALL_RADIUS, 0, Math.PI * 2);
+                    ctx.fillStyle = '#888'; 
+                    ctx.fill();
+                    ctx.globalAlpha = 1.0;
+                });
+            }
+
+            drawBowlingBall(ball1.x, ball1.y);
+            drawCannonball(ball2.x, ball2.y);
+
+            if (ball1.active || ball2.active) {
+                ctx.beginPath();
+                ctx.setLineDash([10, 10]);
+                ctx.moveTo(ball1.x, ball1.y);
+                ctx.lineTo(ball2.x, ball2.y);
+                ctx.strokeStyle = 'rgba(251, 191, 36, 0.8)'; 
+                ctx.lineWidth = 6;
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            drawVectors();
+        }
+
+        function drawNightSky() {
+            let skyGrad = ctx.createLinearGradient(0, 0, 0, FLOOR_Y);
+            skyGrad.addColorStop(0, '#020617'); 
+            skyGrad.addColorStop(1, '#1e1b4b'); 
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            stars.forEach(star => {
+                star.alpha += star.twinkleSpeed;
+                if(star.alpha <= 0.1 || star.alpha >= 1) star.twinkleSpeed *= -1; 
+                
+                ctx.globalAlpha = star.alpha;
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1.0;
+
+            const moonX = CANVAS_WIDTH - 300;
+            const moonY = 300;
+            ctx.beginPath();
+            ctx.arc(moonX, moonY, 80, 0, Math.PI * 2);
+            ctx.fillStyle = '#fef08a';
+            ctx.shadowColor = '#fef08a';
+            ctx.shadowBlur = 50;
+            ctx.fill();
+            ctx.shadowBlur = 0; 
+            
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            ctx.beginPath(); ctx.arc(moonX - 20, moonY - 30, 15, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(moonX - 40, moonY + 20, 25, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(moonX + 30, moonY + 10, 10, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(moonX + 10, moonY - 10, 8, 0, Math.PI * 2); ctx.fill();
+
+            if (!bgCanvas) {
+                bgCanvas = document.createElement('canvas');
+                bgCanvas.width = CANVAS_WIDTH;
+                bgCanvas.height = CANVAS_HEIGHT;
+                const bCtx = bgCanvas.getContext('2d');
+                
+                bCtx.fillStyle = '#0f172a'; 
+                bCtx.beginPath();
+                bCtx.moveTo(0, FLOOR_Y);
+                bCtx.lineTo(0, FLOOR_Y - 400);
+                bCtx.lineTo(300, FLOOR_Y - 650);
+                bCtx.lineTo(700, FLOOR_Y - 450);
+                bCtx.lineTo(1200, FLOOR_Y - 800); 
+                bCtx.lineTo(1700, FLOOR_Y - 500);
+                bCtx.lineTo(CANVAS_WIDTH, FLOOR_Y - 600);
+                bCtx.lineTo(CANVAS_WIDTH, FLOOR_Y);
+                bCtx.fill();
+                
+                bCtx.fillStyle = '#020617'; 
+                bCtx.beginPath();
+                bCtx.moveTo(0, FLOOR_Y);
+                bCtx.lineTo(0, FLOOR_Y - 200);
+                bCtx.lineTo(400, FLOOR_Y - 450);
+                bCtx.lineTo(850, FLOOR_Y - 250);
+                bCtx.lineTo(1400, FLOOR_Y - 550);
+                bCtx.lineTo(1900, FLOOR_Y - 350);
+                bCtx.lineTo(CANVAS_WIDTH, FLOOR_Y - 400);
+                bCtx.lineTo(CANVAS_WIDTH, FLOOR_Y);
+                bCtx.fill();
+            }
+            ctx.drawImage(bgCanvas, 0, 0);
+        }
+
+        function drawArrow(ctx, fromx, fromy, tox, toy, color) {
+            const headlen = 15; 
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 4;
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.fillStyle = color;
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.fill();
+        }
+
+        function drawCastleWall(x, y, width, height) {
+            if (!wallCanvas) {
+                wallCanvas = document.createElement('canvas');
+                wallCanvas.width = CANVAS_WIDTH;
+                wallCanvas.height = CANVAS_HEIGHT;
+                const wCtx = wallCanvas.getContext('2d');
+
+                wCtx.fillStyle = '#111827'; 
+                wCtx.fillRect(x, y, width, height);
+
+                const stoneRows = Math.floor(height / 40); 
+                const stoneRowHeight = height / stoneRows;
+                
+                for (let row = 0; row < stoneRows; row++) {
+                    let currentX = x;
+                    const rowY = y + (row * stoneRowHeight);
+                    
+                    const isOffsetRow = row % 2 !== 0;
+                    if (isOffsetRow) {
+                        currentX -= width * 0.2; 
+                    }
+
+                    while (currentX < x + width) {
+                        const baseStoneWidth = width * 0.4;
+                        const stoneWidth = baseStoneWidth + (Math.random() * baseStoneWidth * 0.5);
+                        
+                        const jitterY = (Math.random() - 0.5) * 2;
+                        const jitterH = (Math.random() - 0.5) * 4;
+
+                        const drawX = Math.max(x, currentX);
+                        const drawW = Math.min(x + width - drawX, currentX + stoneWidth - drawX);
+                        
+                        if (drawW > 0) {
+                            drawStone(wCtx, drawX, rowY + jitterY, drawW, stoneRowHeight + jitterH);
+                        }
+                        
+                        currentX += stoneWidth;
+                    }
+                }
+
+                wCtx.fillStyle = '#4b5563'; 
+                wCtx.fillRect(x, y, width, 15);
+                wCtx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+                wCtx.fillRect(x, y, width, 5);
+                wCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                wCtx.fillRect(x, y + 15, width, 5);
+            }
+            ctx.drawImage(wallCanvas, 0, 0);
+        }
+
+        function drawStone(targetCtx, sx, sy, sw, sh) {
+            const margin = 2;
+            const drawX = sx + margin;
+            const drawY = sy + margin;
+            const drawW = sw - (margin * 2);
+            const drawH = sh - (margin * 2);
+
+            if (drawW <= 0 || drawH <= 0) return;
+
+            const colorVariation = Math.random();
+            let baseColor;
+            if (colorVariation < 0.3) { baseColor = '#374151'; } 
+            else if (colorVariation < 0.6) { baseColor = '#4b5563'; } 
+            else if (colorVariation < 0.9) { baseColor = '#6b7280'; } 
+            else { baseColor = '#3f3f46'; }
+
+            let stoneGradient = targetCtx.createLinearGradient(drawX, drawY, drawX + drawW, drawY + drawH);
+            stoneGradient.addColorStop(0, '#9ca3af'); 
+            stoneGradient.addColorStop(0.2, baseColor); 
+            stoneGradient.addColorStop(0.8, baseColor); 
+            stoneGradient.addColorStop(1, '#1f2937');   
+
+            targetCtx.fillStyle = stoneGradient;
+            targetCtx.beginPath();
+            targetCtx.roundRect(drawX, drawY, drawW, drawH, 4);
+            targetCtx.fill();
+
+            targetCtx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            const numPits = Math.floor(Math.random() * 8) + 2;
+            for (let i = 0; i < numPits; i++) {
+                const px = drawX + Math.random() * drawW;
+                const py = drawY + Math.random() * drawH;
+                const pSize = 1 + Math.random() * 2;
+                targetCtx.beginPath();
+                targetCtx.arc(px, py, pSize, 0, Math.PI * 2);
+                targetCtx.fill();
+            }
+
+            if (Math.random() > 0.5) {
+                targetCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                targetCtx.lineWidth = 1;
+                targetCtx.beginPath();
+                targetCtx.moveTo(drawX + Math.random() * (drawW/2), drawY + Math.random() * (drawH/2));
+                targetCtx.lineTo(drawX + drawW/2 + Math.random() * (drawW/2), drawY + drawH/2 + Math.random() * (drawH/2));
+                targetCtx.stroke();
+            }
+        }
+
+        function drawDragon(x, y, isHit, facingRight) {
+            ctx.save();
+            ctx.translate(x, y); 
+            
+            if (!facingRight) {
+                ctx.scale(-1, 1); 
+            }
+
+            if (isHit) {
+                ctx.translate((Math.random() - 0.5) * 15, (Math.random() - 0.5) * 15);
+            }
+
+            let bodyGrad = ctx.createLinearGradient(-40, -120, 40, 0);
+            bodyGrad.addColorStop(0, isHit ? '#991b1b' : '#064e3b'); 
+            bodyGrad.addColorStop(0.5, isHit ? '#7f1d1d' : '#022c22'); 
+            bodyGrad.addColorStop(1, '#000000'); 
+
+            let bellyGrad = ctx.createLinearGradient(-30, -100, 30, 0);
+            bellyGrad.addColorStop(0, isHit ? '#fca5a5' : '#34d399');
+            bellyGrad.addColorStop(1, isHit ? '#991b1b' : '#064e3b');
+
+            ctx.fillStyle = '#000000';
+            ctx.beginPath(); 
+            ctx.ellipse(-25, -20, 15, 30, Math.PI/6, 0, Math.PI*2); 
+            ctx.fill(); 
+            ctx.beginPath();
+            ctx.moveTo(-35, -5); ctx.lineTo(-10, -5); ctx.lineTo(-15, 0); ctx.lineTo(-40, 0); 
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(0, -30);
+            if(isHit) {
+                ctx.bezierCurveTo(-60, -20, -120, -10, -150, 0); 
+            } else {
+                let tailWhip = Math.sin(currentTime * 5) * 20;
+                ctx.bezierCurveTo(-60, -40, -100, -80 + tailWhip, -160, -30 + tailWhip/2); 
+                ctx.bezierCurveTo(-100, -50, -50, -10, 0, -10);
+            }
+            ctx.fillStyle = bodyGrad;
+            ctx.fill();
+
+            drawWing(ctx, isHit, true);
+
+            ctx.beginPath();
+            ctx.ellipse(-10, -50, 45, 35, Math.PI/8, 0, Math.PI*2);
+            ctx.fillStyle = bodyGrad;
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.ellipse(0, -45, 25, 30, Math.PI/8, 0, Math.PI*2);
+            ctx.fillStyle = bellyGrad;
+            ctx.fill();
+
+            ctx.fillStyle = bodyGrad;
+            ctx.beginPath(); 
+            ctx.ellipse(20, -25, 12, 35, -Math.PI/8, 0, Math.PI*2); 
+            ctx.fill();
+            ctx.fillStyle = '#450a0a';
+            ctx.beginPath();
+            ctx.moveTo(10, 0); ctx.lineTo(35, 0); ctx.lineTo(40, -5); ctx.lineTo(15, -5); 
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(10, -70);
+            if (isHit) {
+                ctx.quadraticCurveTo(50, -60, 60, -30); 
+                ctx.lineTo(20, -40);
+            } else {
+                let neckBob = Math.sin(currentTime * 3) * 5;
+                ctx.quadraticCurveTo(40, -100 + neckBob, 70, -90 + neckBob); 
+                ctx.lineTo(30, -50);
+            }
+            ctx.fillStyle = bodyGrad;
+            ctx.fill();
+
+            let headX = isHit ? 60 : 70;
+            let headY = isHit ? -30 : -90 + (isHit ? 0 : Math.sin(currentTime * 3) * 5);
+            
+            ctx.beginPath();
+            ctx.moveTo(headX - 15, headY + 5); 
+            ctx.lineTo(headX + 25, headY); 
+            ctx.lineTo(headX + 20, headY + 15); 
+            if(isHit) ctx.lineTo(headX + 20, headY + 30); 
+            ctx.lineTo(headX - 20, headY + 20); 
+            ctx.fillStyle = bodyGrad;
+            ctx.fill();
+
+            ctx.fillStyle = '#d97706'; 
+            ctx.beginPath();
+            ctx.moveTo(headX - 10, headY - 5);
+            ctx.quadraticCurveTo(headX - 30, headY - 30, headX - 45, headY - 20); 
+            ctx.quadraticCurveTo(headX - 25, headY - 10, headX, headY + 5);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(headX + 5, headY + 5, 4, 0, Math.PI*2);
+            if (isHit) {
+                ctx.moveTo(headX + 2, headY + 2); ctx.lineTo(headX + 8, headY + 8);
+                ctx.moveTo(headX + 8, headY + 2); ctx.lineTo(headX + 2, headY + 8);
+                ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
+            } else {
+                ctx.fillStyle = '#facc15'; 
+                ctx.shadowColor = '#facc15';
+                ctx.shadowBlur = 15;
+                ctx.fill();
+                ctx.shadowBlur = 0; 
+                ctx.fillStyle = '#000';
+                ctx.fillRect(headX + 4, headY + 2, 2, 6);
+            }
+
+            drawWing(ctx, isHit, false);
+            ctx.restore();
+        }
+
+        function drawWing(ctx, isHit, isBackWing) {
+            ctx.fillStyle = isBackWing ? '#022c22' : '#065f46';
+            ctx.strokeStyle = isBackWing ? '#000000' : '#022c22';
+            ctx.lineWidth = 3;
+            
+            ctx.beginPath();
+            let flap = isHit ? 0 : Math.sin(currentTime * 8 + (isBackWing ? Math.PI/4 : 0)) * 40; 
+            let startX = isBackWing ? -20 : -10;
+            let startY = isBackWing ? -60 : -50;
+            
+            ctx.moveTo(startX, startY); 
+            
+            if (isHit) {
+                ctx.quadraticCurveTo(startX - 20, startY + 20, startX - 40, startY + 40); 
+                ctx.quadraticCurveTo(startX - 10, startY + 30, startX + 10, startY + 10);
+            } else {
+                ctx.quadraticCurveTo(startX - 30, startY - 80 + flap, startX + 40, startY - 100 + flap); 
+                ctx.quadraticCurveTo(startX + 20, startY - 50 + flap/2, startX + 50, startY - 30 + flap/3); 
+                ctx.quadraticCurveTo(startX + 10, startY - 30 + flap/4, startX + 30, startY - 10 + flap/5); 
+            }
+            ctx.lineTo(startX, startY);
+            ctx.fill();
+            ctx.stroke();
+
+            if (!isHit) {
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.quadraticCurveTo(startX - 10, startY - 40 + flap/2, startX + 40, startY - 100 + flap); 
+                ctx.moveTo(startX, startY);
+                ctx.quadraticCurveTo(startX + 5, startY - 20 + flap/3, startX + 50, startY - 30 + flap/3); 
+                ctx.moveTo(startX, startY);
+                ctx.quadraticCurveTo(startX + 10, startY - 10 + flap/4, startX + 30, startY - 10 + flap/5); 
+                ctx.stroke();
+            }
+        }
+
+        function drawCannonball(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y + 15, BALL_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fill();
+
+            let gradient = ctx.createRadialGradient(x - BALL_RADIUS * 0.3, y - BALL_RADIUS * 0.3, BALL_RADIUS * 0.1, x, y, BALL_RADIUS);
+            gradient.addColorStop(0, '#9ca3af'); 
+            gradient.addColorStop(0.4, '#4b5563'); 
+            gradient.addColorStop(0.8, '#1f2937'); 
+            gradient.addColorStop(1, '#111827');   
+
+            ctx.beginPath();
+            ctx.arc(x, y, BALL_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            for(let i=0; i<5; i++) {
+                ctx.beginPath();
+                ctx.arc(x + (Math.random() - 0.5) * BALL_RADIUS, y + (Math.random() - 0.5) * BALL_RADIUS, 2 + Math.random() * 3, 0, Math.PI*2);
+                ctx.fill();
+            }
+        }
+        
+        function drawBowlingBall(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y + 15, BALL_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fill();
+
+            let gradient = ctx.createRadialGradient(x - BALL_RADIUS * 0.3, y - BALL_RADIUS * 0.3, BALL_RADIUS * 0.1, x, y, BALL_RADIUS);
+            gradient.addColorStop(0, '#fca5a5'); 
+            gradient.addColorStop(0.3, '#ef4444'); 
+            gradient.addColorStop(0.7, '#b91c1c'); 
+            gradient.addColorStop(1, '#7f1d1d');   
+
+            ctx.beginPath();
+            ctx.arc(x, y, BALL_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            ctx.fillStyle = '#450a0a'; 
+            
+            ctx.beginPath();
+            ctx.arc(x - BALL_RADIUS * 0.2, y - BALL_RADIUS * 0.4, BALL_RADIUS * 0.15, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(x - BALL_RADIUS * 0.4, y - BALL_RADIUS * 0.1, BALL_RADIUS * 0.12, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(x + BALL_RADIUS * 0.1, y - BALL_RADIUS * 0.1, BALL_RADIUS * 0.12, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.ellipse(x - BALL_RADIUS * 0.4, y - BALL_RADIUS * 0.5, BALL_RADIUS * 0.3, BALL_RADIUS * 0.15, Math.PI / 4, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.fill();
+        }
+
+        function drawVectors() {
+            const scaleFactor = 0.15; 
+            const vectorColorVertical = '#a855f7'; 
+            const vectorColorHorizontal = '#3b82f6'; 
+            const vectorColorResultant = '#22c55e'; 
+
+            if (ball1.active && ball1.vy > 10) { 
+                let vyDraw = ball1.vy * scaleFactor;
+                drawArrow(ctx, ball1.x, ball1.y, ball1.x, ball1.y + vyDraw, vectorColorVertical);
+            }
+
+            if (ball2.active) {
+                let vxDraw = ball2.vx * scaleFactor;
+                let vyDraw = ball2.vy * scaleFactor;
+
+                if (Math.abs(ball2.vx) > 10) {
+                    drawArrow(ctx, ball2.x, ball2.y, ball2.x + vxDraw, ball2.y, vectorColorHorizontal);
+                }
+
+                if (ball2.vy > 10) {
+                    drawArrow(ctx, ball2.x, ball2.y, ball2.x, ball2.y + vyDraw, vectorColorVertical);
+                }
+                
+                if (Math.abs(ball2.vx) > 10 && ball2.vy > 10) {
+                    drawArrow(ctx, ball2.x, ball2.y, ball2.x + vxDraw, ball2.y + vyDraw, vectorColorResultant);
+                }
+            }
+        }
+
+        // Continuous game loop to handle idle animations
+        function gameLoop(timestamp) {
+            if (!lastTimestamp) lastTimestamp = timestamp;
+            let dt = (timestamp - lastTimestamp) / 1000; 
+            lastTimestamp = timestamp;
+
+            if (dt > 0.1) dt = 0.1;
+
+            updatePhysics(dt);
+            drawScene();
+
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        // Initialize 
+        setupNewChallenge();
+        requestAnimationFrame(gameLoop);
+
+        actionBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (gameState === 'idle') {
+                launchBalls();
+            } else if (gameState === 'hit' || gameState === 'miss') {
+                setupNewChallenge();
+            }
+        });
+
+    </script>
+</body>
+</html>
